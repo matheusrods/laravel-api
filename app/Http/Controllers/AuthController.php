@@ -1,31 +1,19 @@
 <?php
 
-/**
- * @OA\Info(
- *     version="1.0.0",
- *     title="API Documentation",
- *     description="Documentação para API de gerenciamento de usuários e colaboradores"
- * )
- * 
- * @OA\Server(
- *     url="http://localhost:8000",
- *     description="Servidor local"
- * )
- */
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
+use OpenApi\Annotations as OA;
 
 class AuthController extends Controller
 {
-    /**
+     /**
      * @OA\Post(
      *     path="/api/login",
      *     tags={"Auth"},
-     *     summary="Loga um usuário",
+     *     summary="Realiza o login de um usuário",
      *     description="Autentica o usuário e retorna um token JWT.",
      *     @OA\RequestBody(
      *         required=true,
@@ -37,7 +25,7 @@ class AuthController extends Controller
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Token JWT gerado",
+     *         description="Token JWT gerado com sucesso",
      *         @OA\JsonContent(
      *             @OA\Property(property="token", type="string"),
      *             @OA\Property(property="token_type", type="string", example="bearer"),
@@ -76,7 +64,19 @@ class AuthController extends Controller
     }
 
     /**
-     * Logout do usuário.
+     * @OA\Post(
+     *     path="/api/logout",
+     *     tags={"Auth"},
+     *     summary="Logout do usuário",
+     *     description="Invalidar o token JWT do usuário logado.",
+     *     @OA\Response(
+     *         response=200,
+     *         description="Logout realizado com sucesso",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Successfully logged out")
+     *         )
+     *     )
+     * )
      */
     public function logout()
     {
@@ -85,4 +85,21 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Successfully logged out']);
     }
-}
+
+    /**
+     * @OA\Get(
+     *     path="/api/test",
+     *     tags={"Test"},
+     *     summary="Endpoint de teste",
+     *     description="Verifica se o Swagger está configurado corretamente.",
+     *     @OA\Response(
+     *         response=200,
+     *         description="Sucesso"
+     *     )
+     * )
+     */
+    public function test()
+    {
+        return response()->json(['message' => 'Test API endpoint working']);
+    }
+    }

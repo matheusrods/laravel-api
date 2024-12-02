@@ -44,8 +44,8 @@ return [
                  * Absolute paths to directory containing the swagger annotations are stored.
                  */
                 'annotations' => [
-                    base_path('app'), // Diretório padrão do Laravel
-                    base_path('app/Swagger'), // Diretório adicional para anotações globais
+                    base_path('app/Swagger'),
+                    base_path('app/Http/Controllers'),
                 ],
             ],
         ],
