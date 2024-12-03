@@ -133,7 +133,276 @@
                 }
             }
         },
+        "/api/collaborators": {
+            "get": {
+                "tags": [
+                    "Collaborators"
+                ],
+                "summary": "Listar colaboradores",
+                "description": "Retorna todos os colaboradores cadastrados pelo gestor logado.",
+                "operationId": "3bad7de0da48224fdc7f177841872903",
+                "responses": {
+                    "200": {
+                        "description": "Lista de colaboradores"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Collaborators"
+                ],
+                "summary": "Adicionar um colaborador",
+                "description": "Insere um colaborador associado ao gestor logado.",
+                "operationId": "95299406c39c1533f68255ccedfe7d9b",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "cpf",
+                                    "city",
+                                    "state"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "João Silva"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "example": "joao.silva@email.com"
+                                    },
+                                    "cpf": {
+                                        "type": "string",
+                                        "example": "12345678900"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "example": "São Paulo"
+                                    },
+                                    "state": {
+                                        "type": "string",
+                                        "example": "SP"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Colaborador criado com sucesso"
+                    },
+                    "400": {
+                        "description": "Erro de validação"
+                    }
+                }
+            }
+        },
+        "/api/collaborators/{id}": {
+            "put": {
+                "tags": [
+                    "Collaborators"
+                ],
+                "summary": "Atualizar colaborador",
+                "description": "Atualiza as informações de um colaborador existente.",
+                "operationId": "a640215bab0c29646ae2a95b3ebb2580",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID do colaborador",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Novo Nome"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "example": "novo.email@example.com"
+                                    },
+                                    "cpf": {
+                                        "type": "string",
+                                        "example": "12345678901"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "example": "Nova Cidade"
+                                    },
+                                    "state": {
+                                        "type": "string",
+                                        "example": "SP"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Colaborador atualizado com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Collaborator updated successfully"
+                                        },
+                                        "collaborator": {
+                                            "$ref": "#/components/schemas/Collaborator"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Colaborador não encontrado"
+                    },
+                    "403": {
+                        "description": "Acesso não autorizado"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Collaborators"
+                ],
+                "summary": "Deletar colaborador",
+                "description": "Exclui um colaborador existente.",
+                "operationId": "0c024bfecd29ff9123842fbb0c92de5b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID do colaborador",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Colaborador deletado com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Collaborator deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Colaborador não encontrado"
+                    },
+                    "403": {
+                        "description": "Acesso não autorizado"
+                    }
+                }
+            }
+        },
+        "/api/collaborators/upload": {
+            "post": {
+                "tags": [
+                    "Collaborators"
+                ],
+                "summary": "Upload de CSV para colaboradores",
+                "description": "Permite o upload de um arquivo CSV contendo colaboradores para serem processados.",
+                "operationId": "d4c2107da57a37ef017d159af3b786b1",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Arquivo processado com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Processamento iniciado com sucesso"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Erro no upload do arquivo"
+                    }
+                }
+            }
+        },
         "/api/users": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Listar usuários",
+                "description": "Retorna uma lista de usuários cadastrados.",
+                "operationId": "c457726701591d1183b53aa71fc13441",
+                "responses": {
+                    "200": {
+                        "description": "Lista de usuários retornada com sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/User"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor"
+                    }
+                }
+            },
             "post": {
                 "tags": [
                     "Users"
@@ -246,6 +515,97 @@
             }
         }
     },
+    "components": {
+        "schemas": {
+            "User": {
+                "title": "User",
+                "description": "Schema do usuário",
+                "properties": {
+                    "id": {
+                        "description": "ID do usuário",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "description": "Nome do usuário",
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "email": {
+                        "description": "Email do usuário",
+                        "type": "string",
+                        "example": "john.doe@example.com"
+                    },
+                    "created_at": {
+                        "description": "Data de criação",
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-12-02T20:30:00Z"
+                    },
+                    "updated_at": {
+                        "description": "Data da última atualização",
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-12-02T20:30:00Z"
+                    }
+                },
+                "type": "object"
+            },
+            "Collaborator": {
+                "title": "Collaborator",
+                "description": "Modelo de colaborador",
+                "required": [
+                    "name",
+                    "email",
+                    "cpf",
+                    "city",
+                    "state"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "ID do colaborador",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "description": "Nome do colaborador",
+                        "type": "string"
+                    },
+                    "email": {
+                        "description": "Email do colaborador",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "cpf": {
+                        "description": "CPF do colaborador",
+                        "type": "string"
+                    },
+                    "city": {
+                        "description": "Cidade do colaborador",
+                        "type": "string"
+                    },
+                    "state": {
+                        "description": "Estado do colaborador",
+                        "type": "string"
+                    },
+                    "user_id": {
+                        "description": "ID do usuário (gestor) associado",
+                        "type": "integer"
+                    },
+                    "created_at": {
+                        "description": "Data de criação",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Data da última atualização",
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
     "tags": [
         {
             "name": "Auth",
@@ -254,6 +614,10 @@
         {
             "name": "Test",
             "description": "Test"
+        },
+        {
+            "name": "Collaborators",
+            "description": "Collaborators"
         },
         {
             "name": "Users",

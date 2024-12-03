@@ -98,6 +98,18 @@ cd seu-projeto
 
 ---
 
+## Gerando a Documentação Swagger
+
+Este projeto utiliza o Swagger para documentação da API. Siga os passos abaixo para gerar e visualizar a documentação:
+
+### Gerar o arquivo `api-docs.json`
+Execute o comando abaixo para gerar a documentação da API:
+
+```bash
+./vendor/bin/openapi app --output storage/api-docs/api-docs.json
+```
+acesse: http://localhost:8000/api/documentation/
+
 ## 🔐 Autenticação JWT
 
 ### Rotas

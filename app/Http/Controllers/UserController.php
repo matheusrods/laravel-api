@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Resources\UserResource;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -59,24 +63,65 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        // Validação dos dados
-        $request->validate([
+        // Validação usando Form Request para melhor estruturação
+        $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:6',
         ]);
 
-        // Criação do usuário
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+        // Cache para evitar duplicação desnecessária
+        $cacheKey = 'user-' . $validatedData['email'];
+        $user = cache()->remember($cacheKey, 600, function () use ($validatedData) {
+            return User::create([
+                'name' => $validatedData['name'],
+                'email' => $validatedData['email'],
+                'password' => Hash::make($validatedData['password']),
+            ]);
+        });
 
+        // Adicionar job na fila para alguma lógica adicional (exemplo: enviar email de boas-vindas)
+        dispatch(function () use ($user) {
+            // Exemplo: Lógica adicional ou envio de email
+            Log::info("Bem-vindo email enviado para {$user->email}");
+        })->onQueue('emails');
+
+        // Retornar resposta JSON usando API Resource
         return response()->json([
             'message' => 'User created successfully',
-            'user' => $user,
+            'user' => new UserResource($user),
         ], 201);
+    }
+
+
+    /**
+     * @OA\Get(
+     *     path="/api/users",
+     *     tags={"Users"},
+     *     summary="Listar usuários",
+     *     description="Retorna uma lista de usuários cadastrados.",
+     *     @OA\Response(
+     *         response=200,
+     *         description="Lista de usuários retornada com sucesso",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/User")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Erro interno do servidor"
+     *     )
+     * )
+     */
+    public function index()
+    {
+        // Cache da listagem de usuários por 10 minutos
+        $users = cache()->remember('users-list', 600, function () {
+            return User::all();
+        });
+
+        return UserResource::collection($users);
     }
 }
 
