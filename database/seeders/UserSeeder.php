@@ -4,11 +4,22 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
-    public function run()
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
     {
-        User::factory(10)->create();
+        User::updateOrCreate(
+            ['email' => 'gestor@empresa.com'], // Condição para evitar duplicatas
+            [
+                'name' => 'Gestor Inicial',
+                'email' => 'gestor@empresa.com',
+                'password' => Hash::make('senha123'), // Certifique-se de usar o Hash
+            ]
+        );
     }
 }
