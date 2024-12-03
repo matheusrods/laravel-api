@@ -17,7 +17,7 @@ class UserSeeder extends Seeder
             ['email' => 'gestor@empresa.com'], // Condição para evitar duplicatas
             [
                 'name' => 'Gestor Inicial',
-                'email' => 'gestor@empresa.com',
+                'email' => 'gestor@empresa.com',//ponha seu email se quiser
                 'password' => Hash::make('senha123'), // Certifique-se de usar o Hash
             ]
         );

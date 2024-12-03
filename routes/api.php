@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CollaboratorController;
+use App\Mail\CollaboratorProcessed;
+use Illuminate\Support\Facades\Mail;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,11 +18,6 @@ use App\Http\Controllers\CollaboratorController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-
-// Rotas públicas (não requerem autenticação)
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
 
 #### LOGIN
 Route::post('/login', [AuthController::class, 'login']);
@@ -38,4 +35,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/collaborators', [CollaboratorController::class, 'index']);
     Route::put('/collaborators/{id}', [CollaboratorController::class, 'update'])->name('collaborators.update');
     Route::delete('/collaborators/{id}', [CollaboratorController::class, 'destroy'])->name('collaborators.destroy');
+    Route::post('/collaborators/upload', [CollaboratorController::class, 'uploadCsv']);
+
 });

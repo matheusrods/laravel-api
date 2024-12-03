@@ -20,11 +20,14 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Instalar Xdebug para cobertura de código
 RUN pecl install xdebug && docker-php-ext-enable xdebug
 
-# Configurar Xdebug para cobertura de código
-RUN echo "zend_extension=xdebug.so" >> /usr/local/etc/php/conf.d/xdebug.ini && \
-    echo "xdebug.mode=coverage" >> /usr/local/etc/php/conf.d/xdebug.ini && \
-    echo "xdebug.start_with_request=no" >> /usr/local/etc/php/conf.d/xdebug.ini && \
-    echo "xdebug.output_dir=/tmp" >> /usr/local/etc/php/conf.d/xdebug.ini
+# Verifique se o arquivo de configuração do Xdebug não está sendo carregado duas vezes
+RUN if [ ! -f /usr/local/etc/php/conf.d/xdebug.ini ]; then \
+      echo "zend_extension=xdebug.so" > /usr/local/etc/php/conf.d/xdebug.ini && \
+      echo "xdebug.mode=coverage" >> /usr/local/etc/php/conf.d/xdebug.ini && \
+      echo "xdebug.start_with_request=no" >> /usr/local/etc/php/conf.d/xdebug.ini && \
+      echo "xdebug.output_dir=/tmp" >> /usr/local/etc/php/conf.d/xdebug.ini; \
+    fi
+
 
 # Configuração do diretório de trabalho
 WORKDIR /var/www/html

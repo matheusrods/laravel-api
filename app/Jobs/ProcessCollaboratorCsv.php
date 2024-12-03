@@ -21,18 +21,12 @@ class ProcessCollaboratorCsv implements ShouldQueue
     private $filePath;
     private $userId;
 
-    /**
-     * Create a new job instance.
-     */
     public function __construct(string $filePath, int $userId)
     {
         $this->filePath = $filePath;
         $this->userId = $userId;
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle()
     {
         $processedCount = 0;
@@ -60,13 +54,11 @@ class ProcessCollaboratorCsv implements ShouldQueue
                 try {
                     $data = $this->validateRow($header, $row);
 
-                    // Verifica se já existe um colaborador com o mesmo e-mail
                     if (Collaborator::where('email', $data['email'])->exists()) {
                         Log::warning("Colaborador já existente.", ['email' => $data['email']]);
                         continue;
                     }
 
-                    // Insere o colaborador na base de dados
                     Collaborator::create([
                         'name' => $data['name'],
                         'email' => $data['email'],
@@ -86,16 +78,16 @@ class ProcessCollaboratorCsv implements ShouldQueue
                 }
             }
 
-            // Obtém o e-mail do usuário
+            // Envio do e-mail ao usuário
             $userEmail = User::find($this->userId)?->email;
             if (!$userEmail) {
                 throw new \Exception('E-mail do usuário não encontrado.');
             }
 
-            // Envia e-mail para o usuário
             Mail::to($userEmail)->send(new CollaboratorProcessed([
                 'total_processed' => $processedCount,
                 'total_failed' => $failedCount,
+                'duplicated_count' => $duplicatedCount ?? 0,
                 'timestamp' => now()->toDateTimeString(),
             ]));
 
@@ -120,9 +112,6 @@ class ProcessCollaboratorCsv implements ShouldQueue
         }
     }
 
-    /**
-     * Valida o cabeçalho do CSV.
-     */
     private function validateHeader(array $header): bool
     {
         $expectedHeader = ['name', 'email', 'cpf', 'city', 'state'];
@@ -131,9 +120,6 @@ class ProcessCollaboratorCsv implements ShouldQueue
         return $header === $expectedHeader;
     }
 
-    /**
-     * Valida e organiza uma linha do CSV.
-     */
     private function validateRow(array $header, array $row): array
     {
         if (count($header) !== count($row)) {

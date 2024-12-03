@@ -8,9 +8,15 @@ use App\Http\Resources\CollaboratorResource;
 use App\Jobs\ProcessCollaboratorCsv;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Facades\JWTAuth;  // Importa o JWTAuth
 
 class CollaboratorController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:api');  // Usando o middleware JWT para proteger as rotas
+    }
+
     /**
      * @OA\Post(
      *     path="/api/collaborators",
@@ -34,26 +40,28 @@ class CollaboratorController extends Controller
      */
     public function store(Request $request)
     {
+        // Validação dos dados recebidos
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:collaborators,email',
-            'cpf' => 'required|unique:collaborators,cpf',
+            'email' => 'required|email',
+            'cpf' => 'required',
             'city' => 'required|string|max:255',
             'state' => 'required|string|max:2',
         ]);
-
-        // Verificar se o e-mail ou CPF já existe
+    
+        // Verificar se o colaborador com o mesmo email ou cpf já existe
         $existingCollaborator = Collaborator::where('email', $request->email)
-        ->orWhere('cpf', $request->cpf)
-        ->first();
-
+            ->orWhere('cpf', $request->cpf)
+            ->first();
+    
+        // Se já existir, retorna uma mensagem informando que não será criado
         if ($existingCollaborator) {
             return response()->json([
                 'message' => 'A collaborator with this email or CPF already exists.',
-            ], 422);
+            ], 422);  // Status 422, indicando que a requisição não foi bem-sucedida devido à duplicidade
         }
-
-        // Criar novo colaborador
+    
+        // Caso não exista, cria o novo colaborador
         $collaborator = Collaborator::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -62,12 +70,13 @@ class CollaboratorController extends Controller
             'state' => $request->state,
             'user_id' => auth()->id(),
         ]);
-
+    
         return response()->json([
             'message' => 'Collaborator created successfully',
             'collaborator' => $collaborator,
-        ], 201);
+        ], 201); // Retorna o status 201, indicando que o colaborador foi criado com sucesso
     }
+    
 
     /**
      * @OA\Get(
@@ -145,8 +154,8 @@ class CollaboratorController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:collaborators,email,' . $id,
-            'cpf' => 'required|string|unique:collaborators,cpf,' . $id,
+            'email' => 'required|email' . $id,
+            'cpf' => 'required' . $id,
             'city' => 'required|string|max:255',
             'state' => 'required|string|max:2',
         ]);
