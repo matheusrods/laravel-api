@@ -68,26 +68,6 @@ cd seu-projeto
    docker compose exec app bash
    ```
 
-3. Instale as dependências do projeto:
-   ```bash
-   composer install
-   ```
-
-4. Gere a chave da aplicação:
-   ```bash
-   php artisan key:generate
-   ```
-
-5. Execute as migrações para criar as tabelas do banco de dados:
-   ```bash
-   php artisan migrate
-   ```
-
-6. Gere o segredo JWT:
-   ```bash
-   php artisan jwt:secret
-   ```
-
 ---
 
 ### 4. Testar a Aplicação
@@ -102,12 +82,6 @@ cd seu-projeto
 
 Este projeto utiliza o Swagger para documentação da API. Siga os passos abaixo para gerar e visualizar a documentação:
 
-### Gerar o arquivo `api-docs.json`
-Execute o comando abaixo para gerar a documentação da API:
-
-```bash
-./vendor/bin/openapi app --output storage/api-docs/api-docs.json
-```
 acesse: http://localhost:8000/api/documentation/
 
 ## 🔐 Autenticação JWT
