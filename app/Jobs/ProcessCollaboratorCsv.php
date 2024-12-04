@@ -13,13 +13,15 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use App\Mail\CollaboratorProcessed;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
-class ProcessCollaboratorCsv implements ShouldQueue
+class ProcessCollaboratorCsv implements ShouldQueue, \Illuminate\Contracts\Queue\ShouldBeUnique
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private $filePath;
-    private $userId;
+    private string $filePath;
+    private int $userId;
+    public int $uniqueFor = 3600; // Garantia de unicidade do job por 1 hora
 
     public function __construct(string $filePath, int $userId)
     {
@@ -31,6 +33,15 @@ class ProcessCollaboratorCsv implements ShouldQueue
     {
         $processedCount = 0;
         $failedCount = 0;
+        $duplicatedCount = 0;
+        $failedRecords = [];
+
+        $user = User::find($this->userId);
+
+        if (!$user) {
+            Log::error("Usuário não encontrado para o processamento.", ['user_id' => $this->userId]);
+            return;
+        }
 
         try {
             // Verifica e obtém o caminho do arquivo
@@ -54,11 +65,30 @@ class ProcessCollaboratorCsv implements ShouldQueue
                 try {
                     $data = $this->validateRow($header, $row);
 
+                    // Validações adicionais
+                    $validator = Validator::make($data, [
+                        'name' => 'required|string|max:255',
+                        'email' => 'required|email|unique:collaborators,email',
+                        'cpf' => 'required|digits:11|unique:collaborators,cpf',
+                        'city' => 'required|string|max:255',
+                        'state' => 'required|string|max:2',
+                    ]);
+
+                    if ($validator->fails()) {
+                        $failedCount++;
+                        $failedRecords[] = ['data' => $data, 'errors' => $validator->errors()];
+                        Log::warning('Dados inválidos', ['data' => $data, 'errors' => $validator->errors()]);
+                        continue;
+                    }
+
+                    // Verifica duplicatas
                     if (Collaborator::where('email', $data['email'])->exists()) {
+                        $duplicatedCount++;
                         Log::warning("Colaborador já existente.", ['email' => $data['email']]);
                         continue;
                     }
 
+                    // Criação ou atualização de colaborador
                     Collaborator::create([
                         'name' => $data['name'],
                         'email' => $data['email'],
@@ -78,36 +108,33 @@ class ProcessCollaboratorCsv implements ShouldQueue
                 }
             }
 
-            // Envio do e-mail ao usuário
-            $userEmail = User::find($this->userId)?->email;
-            if (!$userEmail) {
-                throw new \Exception('E-mail do usuário não encontrado.');
-            }
+            // Limpa o cache
+            cache()->forget("collaborators-{$this->userId}");
 
-            Mail::to($userEmail)->send(new CollaboratorProcessed([
+            // Envio do e-mail ao usuário
+            Mail::to($user->email)->send(new CollaboratorProcessed([
                 'total_processed' => $processedCount,
                 'total_failed' => $failedCount,
-                'duplicated_count' => $duplicatedCount ?? 0,
+                'duplicated_count' => $duplicatedCount,
+                'failures' => $failedRecords,
                 'timestamp' => now()->toDateTimeString(),
             ]));
 
-            Log::info('E-mail enviado com sucesso.', ['email' => $userEmail]);
+            Log::info('E-mail enviado com sucesso.', ['email' => $user->email]);
 
-            // Remove o arquivo após o processamento
-            if (Storage::exists($this->filePath)) {
-                Storage::delete($this->filePath);
-                Log::info('Arquivo CSV deletado com sucesso.', ['path' => $this->filePath]);
-            }
         } catch (\Exception $e) {
             Log::error("Erro no processamento do arquivo CSV: {$e->getMessage()}");
 
             // Envia e-mail de erro ao usuário
-            $userEmail = User::find($this->userId)?->email;
-            if ($userEmail) {
-                Mail::to($userEmail)->send(new CollaboratorProcessed([
-                    'error' => $e->getMessage(),
-                    'timestamp' => now()->toDateTimeString(),
-                ]));
+            Mail::to($user->email)->send(new CollaboratorProcessed([
+                'error' => 'Houve um erro no processamento. Por favor, tente novamente mais tarde.',
+                'timestamp' => now()->toDateTimeString(),
+            ]));
+        } finally {
+            // Garante que o arquivo será removido
+            if (Storage::exists($this->filePath)) {
+                Storage::delete($this->filePath);
+                Log::info('Arquivo CSV deletado com sucesso.', ['path' => $this->filePath]);
             }
         }
     }
@@ -115,9 +142,7 @@ class ProcessCollaboratorCsv implements ShouldQueue
     private function validateHeader(array $header): bool
     {
         $expectedHeader = ['name', 'email', 'cpf', 'city', 'state'];
-        sort($header);
-        sort($expectedHeader);
-        return $header === $expectedHeader;
+        return empty(array_diff($expectedHeader, $header));
     }
 
     private function validateRow(array $header, array $row): array

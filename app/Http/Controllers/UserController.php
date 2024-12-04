@@ -2,16 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Resources\UserResource;
-use Illuminate\Support\Facades\Gate;
+use App\Services\UserService;
 use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
+    private UserService $service;
+
+    public function __construct(UserService $service)
+    {
+        $this->service = $service;
+    }
+
     /**
      * @OA\Post(
      *     path="/api/users",
@@ -61,37 +65,37 @@ class UserController extends Controller
      *     )
      * )
      */
-    public function store(Request $request)
+    public function store(StoreUserRequest $request)
     {
-        // Validação usando Form Request para melhor estruturação
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-        ]);
-
-        // Cache para evitar duplicação desnecessária
-        $cacheKey = 'user-' . $validatedData['email'];
-        $user = cache()->remember($cacheKey, 600, function () use ($validatedData) {
-            return User::create([
-                'name' => $validatedData['name'],
-                'email' => $validatedData['email'],
-                'password' => Hash::make($validatedData['password']),
-            ]);
-        });
-
-        // Adicionar job na fila para alguma lógica adicional (exemplo: enviar email de boas-vindas)
-        dispatch(function () use ($user) {
-            // Exemplo: Lógica adicional ou envio de email
-            Log::info("Bem-vindo email enviado para {$user->email}");
-        })->onQueue('emails');
-
-        // Retornar resposta JSON usando API Resource
-        return response()->json([
-            'message' => 'User created successfully',
-            'user' => new UserResource($user),
-        ], 201);
+        try {
+            
+            $user = $this->service->create($request->validated());
+    
+            Log::info('Usuário criado com sucesso.', ['user_id' => $user->id]);
+    
+            return response()->json([
+                'message' => 'User created successfully',
+                'user' => new UserResource($user),
+            ], 201);
+        
+        } catch (\Exception $e) {
+            
+            Log::error('Erro ao criar usuário.', ['error' => $e->getMessage()]);
+    
+            if ($e->getMessage() === 'A user with this email already exists.') {
+                return response()->json([
+                    'message' => 'User already exists',
+                ], 409); // HTTP 409: Conflict
+            }
+    
+            return response()->json([
+                'message' => 'Error creating user',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+    
+
 
 
     /**
@@ -116,12 +120,19 @@ class UserController extends Controller
      */
     public function index()
     {
-        // Cache da listagem de usuários por 10 minutos
-        $users = cache()->remember('users-list', 600, function () {
-            return User::all();
-        });
+        try {
+            $users = $this->service->getAll();
 
-        return UserResource::collection($users);
+            Log::info('Lista de usuários recuperada com sucesso.');
+
+            return UserResource::collection($users);
+        } catch (\Exception $e) {
+            Log::error('Erro ao listar usuários.', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Error fetching users',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
-
